@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./bootstrap/dist/css/bootstrap.css">
+    <title>Document</title>
+    <style>
+        body {
+            background-color: slateblue;
+        }
+        .heading ul {
+            padding-top: 20px;
+        }
+        .heading li{
+            color: #fff;
+           
+        }
+        .buttons p:hover i {
+            color: #000;
+            background-color: slateblue;
+        }
+        .video-section video{
+            width: 40%;
+        }
+    </style>
+</head>
+<body>
+    <div class="heading container">
+      <div class="navbar d-flex justify-content-center flex-column">
+        <div class="navbar-brand"><img src="./logo.png" alt="logo"></div>
+            <ul>
+                <li>Kindly Capture a Video of 1 min and save it</li>
+                <li>Press Start Icon to Start Recording</li>
+                <li>Press Stop Icon to Stop Recording</li>
+            </ul>
+      </div>
+    </div>
+    <div class="buttons d-flex justify-content-center flex-row">
+        <button class="mr-5" id="btnStart"><i class="fa fa-play-circle" style="font-size:48px;color:#000"></i></button>
+        <button id="btnStop"><i class="fa fa-stop-circle" style="font-size:48px;color:#000"></i></button>
+
+    </div>
+    <div class="video-section d-flex justify-content-between container">
+        <video id="v1" controls></video>
+        <video id="vid2" controls></video>
+    </div>
+    <script>
+         let constraintObj = { 
+            audio: false, 
+            video: { 
+                facingMode: "user", 
+                width: { min: 1280, max: 1920 },
+                height: { min: 720, max: 1080 } 
+            } 
+        }; 
+       
+        if (navigator.mediaDevices === undefined) {
+            navigator.mediaDevices = {};
+            navigator.mediaDevices.getUserMedia = function(constraintObj) {
+                let getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+                if (!getUserMedia) {
+                    return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
+                }
+                return new Promise(function(resolve, reject) {
+                    getUserMedia.call(navigator, constraintObj, resolve, reject);
+                });
+            }
+        }else{
+            navigator.mediaDevices.enumerateDevices()
+            .then(devices => {
+                devices.forEach(device=>{
+                    console.log(device.kind.toUpperCase(), device.label);
+                    //, device.deviceId
+                })
+            })
+            .catch(err=>{
+                console.log(err.name, err.message);
+            })
+        }
+
+        navigator.mediaDevices.getUserMedia(constraintObj)
+        .then(function(mediaStreamObj) {
+            //connect the media stream to the first video element
+            let video = document.querySelector('video');
+            if ("srcObject" in video) {
+                video.srcObject = mediaStreamObj;
+            } else {
+                //old version
+                video.src = window.URL.createObjectURL(mediaStreamObj);
+            }
+            
+            video.onloadedmetadata = function(ev) {
+                //show in the video element what is being captured by the webcam
+                video.play();
+            };
+            
+            let start = document.getElementById('btnStart');
+            let stop = document.getElementById('btnStop');
+            let vidSave = document.getElementById('vid2');
+            let mediaRecorder = new MediaRecorder(mediaStreamObj);
+            let chunks = [];
+            
+            start.addEventListener('click', (ev)=>{
+                mediaRecorder.start();
+                console.log(mediaRecorder.state);
+            })
+            stop.addEventListener('click', (ev)=>{
+                mediaRecorder.stop();
+                console.log(mediaRecorder.state);
+            });
+            mediaRecorder.ondataavailable = function(ev) {
+                chunks.push(ev.data);
+            }
+            mediaRecorder.onstop = (ev)=>{
+                let blob = new Blob(chunks, { 'type' : 'video/mp4;' });
+                chunks = [];
+                let videoURL = window.URL.createObjectURL(blob);
+                vidSave.src = videoURL;
+            }
+        })
+        .catch(function(err) { 
+            console.log(err.name, err.message); 
+        });
+        
+    </script>
+    <script src="./bootstrap/dist/js/bootstrap.js"></script>
+</body>
+</html>
